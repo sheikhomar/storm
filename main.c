@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  // Hej mine venner
+  /* Hej mine venner */
 
 Printf("Hello World!");
 
