@@ -31,6 +31,7 @@ typedef struct room {
 
 void read_input(char file_name[], Day days[], int *days_count);
 void calc(Day days[], int days_count, Room *room);
+double calc_weight(int index);
 
 int main(void) {
   Day days[MAX_DAYS];
@@ -103,12 +104,27 @@ int is_weekday(int day_index) {
   return ((day_index+1) % 7 < 6 && (day_index+1) % 7 > 0);
 }
 
-void reset(double e[], int f[]) {
+void reset(double e[], double f[]) {
   int i;
   for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
     e[i] = 0;
     f[i] = 0;
   }
+}
+
+double calc_weight(int index) {
+  if (index < 28) {
+    return 1.0;
+  } else if (index < 42) {
+    return 0.8;
+  } else if (index < 56) {
+    return 0.6;
+  } else if (index < 70) {
+    return 0.4;
+  } else if (index < 120) {
+    return 0.15;
+  }
+  return 0;
 }
 
 void calc(Day days[], int days_count, Room *room) {
@@ -117,7 +133,8 @@ void calc(Day days[], int days_count, Room *room) {
   double weekend_result = 0;
   int weekdays_count, weekends_count;
   double results[14];
-  int counters[14];
+  double counters[14];
+  double weight;
 
   if (days_count <= 7) {
     for (i = 0; i < MAX_TIME_SLOT; i++) {
@@ -149,8 +166,9 @@ void calc(Day days[], int days_count, Room *room) {
     for (i = 0; i < MAX_TIME_SLOT; i++) {
       reset(results, counters);
       for (j = 0; j < days_count; j++) {
-        results[j % MAX_DAYS_FINE_SORTING] += days[j].time_slots[i];
-        counters[j % MAX_DAYS_FINE_SORTING]++;
+        weight = calc_weight(j);
+        results[j % MAX_DAYS_FINE_SORTING] += (days[j].time_slots[i] * weight);
+        counters[j % MAX_DAYS_FINE_SORTING] += weight;
       }
       for (j = 0; j < MAX_DAYS_FINE_SORTING; j++) {
         results[j] /= counters[j];
