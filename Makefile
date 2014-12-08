@@ -1,2 +1,2 @@
 build: main.c
-	gcc -ansi -Wall -pendentic main.c
+	gcc -ansi -Wall -pedantic main.c
