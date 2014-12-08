@@ -3,7 +3,7 @@
 
 int main(void) {
   /* Hej mine venner */
-  /* *//**//**/             /* ヽ༼ຈل͜ຈ༽ﾉ raise your dongers ヽ༼ຈل͜ຈ༽ﾉ */
+  /* ୧༼ಠ益ಠ༽୨ No dongerino plz - so wow  ୧༼ಠ益ಠ༽୨ */
 Printf("Hello World!");
 
   return EXIT_SUCCESS;
