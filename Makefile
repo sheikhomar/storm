@@ -11,4 +11,4 @@ pixel.o: pixel.h pixel.c
 	gcc -ansi -Wall -pedantic -c pixel.c pixel.h -lm
 
 clean:
-	rm -f *.o *.gch
+	rm -f *.o *.gch *.exe *.out
