@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bchart.h"
+
 #define MAX_CHARS_PER_LINE 100
 #define MAX_DAYS 100
 #define MAX_TIME_SLOT 48
@@ -37,6 +39,7 @@ double calc_weight(int index);
 int is_weekday(int day_index);
 void generate_plan_file(char file_name[], int days_count, Room room);
 void calc_trend(int days_count, Room *room);
+void generate_plan_chart(char file_name[], int days_count, Room room);
 
 int main(int argc, char *argv[]) {
   Day days[MAX_DAYS];
@@ -45,8 +48,8 @@ int main(int argc, char *argv[]) {
   Room room;
   strcpy(room.name, "test");
 
-  if (argc < 1) {
-    printf("Please provide a file name.");
+  if (argc < 2) {
+    printf("Please provide a file name.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -54,7 +57,8 @@ int main(int argc, char *argv[]) {
   calc(days, days_count, &room);
   printf("Days Count: %d\n", days_count);
 
-  generate_plan_file("plan.txt", days_count, room);
+  /*generate_plan_file("tmp/plan.txt", days_count, room);*/
+  generate_plan_chart("tmp/plan.pnm", days_count, room);
 
   calc_trend(days_count, &room);
 
@@ -92,6 +96,43 @@ void calc_trend(int days_count, Room *room) {
       for (j = 0; j < MAX_TIME_SLOT; j++) {
       }
     }
+  }
+}
+void generate_plan_chart(char file_name[], int days_count, Room room) {
+  int i,j;
+  BlockChart *chart = NULL;
+
+  if (days_count <= 28) {
+    chart = bchart_init(MAX_TIME_SLOT, 2);
+    for (j = 0; j < MAX_TIME_SLOT; j++) {
+      bchart_draw_blocks(
+          chart,
+          room.rough_plan.weekdays.time_slots,
+          MAX_TIME_SLOT);
+    }
+    bchart_next_line(chart);
+    for (j = 0; j < MAX_TIME_SLOT; j++) {
+      bchart_draw_blocks(
+          chart,
+          room.rough_plan.weekends.time_slots,
+          MAX_TIME_SLOT);
+    }
+  } else {
+    chart = bchart_init(MAX_TIME_SLOT, MAX_DAYS_FINE_SORTING);
+    for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+      for (j = 0; j < MAX_TIME_SLOT; j++) {
+        bchart_draw_blocks(
+            chart,
+            room.fine_plan.days[i].time_slots,
+            MAX_TIME_SLOT);
+      }
+      bchart_next_line(chart);
+    }
+  }
+
+  if (chart != NULL) {
+    bchart_save(chart, file_name);
+    bchart_dispose(chart);
   }
 }
 
