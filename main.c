@@ -168,16 +168,21 @@ void generate_plan_file(char file_name[], int days_count, Room room) {
 
 void read_input(char file_name[], Day days[], int *days_count) {
   FILE *handle = fopen(file_name, "r");
-  int i, j, scan_res;
+  int i = 0, j = 0, scan_res;
+  double value;
 
-  *days_count = 0;
   if (handle != NULL) {
-    for (i = 0; i < MAX_DAYS; i++) {
-      for (j = 0; j < MAX_TIME_SLOT; j++) {
-        scan_res = fscanf(handle, " %lf", &(days[*days_count].time_slots[j]));
+    while ((scan_res = fscanf(handle, " %lf", &value)) != EOF) {
+      if (scan_res == 0) {
+        printf("Error in read_file(): invalid value at line %d value %d.\n", i+1, j+1);
+        exit(EXIT_FAILURE);
       }
-      if (scan_res == 1) {
-        (*days_count)++;
+
+      days[i].time_slots[j] = value;
+      j++;
+      if (j % MAX_TIME_SLOT == 0) {
+        i++;
+        j = 0;
       }
     }
 
@@ -186,6 +191,8 @@ void read_input(char file_name[], Day days[], int *days_count) {
     printf("Error in read_file(): File '%s' cannot be opened.\n", file_name);
     exit(EXIT_FAILURE);
   }
+
+  *days_count = i;
 }
 
 /* @param[in] day_index Must start with a Monday */
