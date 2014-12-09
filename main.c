@@ -15,6 +15,8 @@ typedef struct day Day;
 struct rough_weighted_week {
   Day weekdays;
   Day weekends;
+  Day weekdays_trends;
+  Day weekends_trends;
 };
 typedef struct rough_weighted_week RoughWeightedWeek;
 
@@ -32,49 +34,95 @@ typedef struct room {
 void read_input(char file_name[], Day days[], int *days_count);
 void calc(Day days[], int days_count, Room *room);
 double calc_weight(int index);
+int is_weekday(int day_index);
+void generate_plan_file(char file_name[], int days_count, Room room);
+void calc_trend(int days_count, Room *room);
 
-int main(void) {
+int main(int argc, char *argv[]) {
   Day days[MAX_DAYS];
   int days_count;
-  int i,j;
+  int i;
   Room room;
   strcpy(room.name, "test");
 
-  read_input("test.txt", days, &days_count);
+  if (argc < 1) {
+    printf("Please provide a file name.");
+    exit(EXIT_FAILURE);
+  }
+
+  read_input(argv[1], days, &days_count);
   calc(days, days_count, &room);
   printf("Days Count: %d\n", days_count);
 
-  /*
-  for (i = 0; i < MAX_TIME_SLOT; i++) {
-    printf("%4.1f ", days[0].time_slots[i]);
-  }
-  printf("\n");
-  */
-  /*
-  printf("Weekdays: \n");
-  for (i = 0; i < MAX_TIME_SLOT; i++) {
-    printf("%4.2f ",
-        room.rough_plan.weekdays.time_slots[i]);
-  }
-  printf("\n");
-  printf("Weekends: \n");
-  for (i = 0; i < MAX_TIME_SLOT; i++) {
-    printf("%4.2f ",
-        room.rough_plan.weekends.time_slots[i]);
-  }
-  printf("\n");
-  */
+  generate_plan_file("plan.txt", days_count, room);
 
-  for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
-    printf("Day %d: \n", (i+1));
-    for (j = 0; j < MAX_TIME_SLOT; j++) {
-      printf("%4.2f ",
-          room.fine_plan.days[i].time_slots[j]);
-    }
-    printf("\n");
+  calc_trend(days_count, &room);
+
+  for (i = 1; i < MAX_TIME_SLOT - 1; i++) {
+    printf("%+4.2f %+4.2f \n",
+        room.rough_plan.weekdays_trends.time_slots[i],
+        room.rough_plan.weekends_trends.time_slots[i]);
   }
 
   return EXIT_SUCCESS;
+}
+
+void calc_trend(int days_count, Room *room) {
+  int i,j;
+  double result_weekdays;
+  double result_weekends;
+  if (days_count <= 28) {
+    for (i = 0; i < MAX_TIME_SLOT; i++) {
+      if (i < (MAX_TIME_SLOT-1) && i > 0) {
+        result_weekdays = room->rough_plan.weekdays.time_slots[i + 1] -
+          room->rough_plan.weekdays.time_slots[i];
+        result_weekdays += room->rough_plan.weekdays.time_slots[i] -
+          room->rough_plan.weekdays.time_slots[i - 1];
+        room->rough_plan.weekdays_trends.time_slots[i] = result_weekdays;
+
+        result_weekends = room->rough_plan.weekends.time_slots[i + 1] -
+          room->rough_plan.weekends.time_slots[i];
+        result_weekends += room->rough_plan.weekends.time_slots[i] -
+          room->rough_plan.weekends.time_slots[i - 1];
+        room->rough_plan.weekends_trends.time_slots[i] = result_weekends;
+      }
+    }
+  } else {
+    for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+      for (j = 0; j < MAX_TIME_SLOT; j++) {
+      }
+    }
+  }
+}
+
+void generate_plan_file(char file_name[], int days_count, Room room) {
+  FILE *output;
+  int i,j;
+  output = fopen("plan.txt", "w");
+
+  if (output != NULL) {
+    if (days_count <= 28) {
+      for (j = 0; j < MAX_TIME_SLOT; j++) {
+        fprintf(output, "%4.2f ",
+            room.rough_plan.weekdays.time_slots[j]);
+      }
+      fprintf(output, "\n");
+      for (j = 0; j < MAX_TIME_SLOT; j++) {
+        fprintf(output, "%4.2f ",
+            room.rough_plan.weekends.time_slots[j]);
+      }
+    } else {
+      for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+        for (j = 0; j < MAX_TIME_SLOT; j++) {
+          fprintf(output, "%4.2f ",
+              room.fine_plan.days[i].time_slots[j]);
+        }
+        fprintf(output, "\n");
+      }
+    }
+
+    fclose(output);
+  }
 }
 
 void read_input(char file_name[], Day days[], int *days_count) {
