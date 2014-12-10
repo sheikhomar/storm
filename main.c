@@ -9,37 +9,48 @@
 #define MAX_TIME_SLOT 48
 #define MAX_DAYS_FINE_SORTING 14
 
-struct day {
+typedef struct day {
   double time_slots[MAX_TIME_SLOT];
-};
-typedef struct day Day;
+} Day;
 
-struct rough_weighted_week {
+typedef struct sensor_dependency {
+  /* Negative minutes indicate how long the user must be absent for the thermostat to turn off */
+  double minutes[MAX_TIME_SLOT];
+} SensorDependency;
+
+typedef struct rough_weighted_week {
   Day weekdays;
   Day weekends;
   Day weekdays_trends;
   Day weekends_trends;
-};
-typedef struct rough_weighted_week RoughWeightedWeek;
+  Day weekdays_temperatures;
+  Day weekends_temperatures;
+  SensorDependency weekdays_dependency;
+  SensorDependency weekends_dependency;
+} RoughWeightedWeek;
 
-struct fine_weighted_week {
+typedef struct fine_weighted_week {
   Day days[14];
-};
-typedef struct fine_weighted_week FineWeightedWeek;
+  Day trends[14];
+} FineWeightedWeek;
 
 typedef struct room {
   char name[MAX_CHARS_PER_LINE];
   RoughWeightedWeek rough_plan;
   FineWeightedWeek fine_plan;
+  double comfort_temperature;
+  double away_temperature;
+  double sleep_temperature;
 } Room;
 
 void read_input(char file_name[], Day days[], int *days_count);
 void calc(Day days[], int days_count, Room *room);
-double calc_weight(int index);
+double calc_weight(int data_age_in_days);
 int is_weekday(int day_index);
 void generate_plan_file(char file_name[], int days_count, Room room);
 void calc_trend(int days_count, Room *room);
 void generate_plan_chart(char file_name[], int days_count, Room room);
+void calc_temperatures(Room *room);
 
 int main(int argc, char *argv[]) {
   Day days[MAX_DAYS];
@@ -62,13 +73,74 @@ int main(int argc, char *argv[]) {
 
   calc_trend(days_count, &room);
 
-  for (i = 1; i < MAX_TIME_SLOT - 1; i++) {
+  calc_temperatures(&room);
+
+  for (i = 0; i < MAX_TIME_SLOT; i++) {
     printf("%+4.2f %+4.2f \n",
         room.rough_plan.weekdays_trends.time_slots[i],
         room.rough_plan.weekends_trends.time_slots[i]);
   }
 
   return EXIT_SUCCESS;
+}
+
+void calc_temperatures(Room *room) {
+  int i, temp_diff;
+  temp_diff = room->comfort_temperature - room->away_temperature;
+  for (i = 0; i < MAX_TIME_SLOT; i++) {
+    if (room->rough_plan.weekdays.time_slots[i] > 0.9) {
+      room->rough_plan.weekdays_temperatures.time_slots[i] = room->comfort_temperature;
+      room->rough_plan.weekdays_dependency.minutes[i] = 0;
+    } else if (room->rough_plan.weekdays.time_slots[i] > 0.7) {
+
+      /* When the trend is rising */
+      if (room->rough_plan.weekdays_trends.time_slots[i] > 0.1) {
+        room->rough_plan.weekdays_temperatures.time_slots[i] =
+          room->comfort_temperature - (temp_diff * (1 - room->rough_plan.weekdays.time_slots[i]));
+        room->rough_plan.weekdays_dependency.minutes[i] = 0.5;
+
+      /* When the trend is neutral */
+      } else if (room->rough_plan.weekdays_trends.time_slots[i] >= -0.1 &&
+          room->rough_plan.weekdays_trends.time_slots[i] <= 0.1 ) {
+
+        if (i > 0) {
+          room->rough_plan.weekdays_temperatures.time_slots[i] =
+            room->rough_plan.weekdays_temperatures.time_slots[i-1];
+        } else {
+          room->rough_plan.weekdays_temperatures.time_slots[i] = room->comfort_temperature;
+        }
+
+      /* When the trend is falling */
+      } else if (room->rough_plan.weekdays_trends.time_slots[i] < -0.1) {
+        room->rough_plan.weekdays_temperatures.time_slots[i] = room->comfort_temperature;
+        room->rough_plan.weekdays_dependency.minutes[i] = -30 * room->rough_plan.weekdays.time_slots[i];
+      }
+    } else if (room->rough_plan.weekdays.time_slots[i] > 0.5) {
+
+      /* When the trend is rising */
+      if (room->rough_plan.weekdays_trends.time_slots[i] > 0.1) {
+        room->rough_plan.weekdays_temperatures.time_slots[i] =
+          room->comfort_temperature - (temp_diff * (1 - room->rough_plan.weekdays.time_slots[i]));
+        room->rough_plan.weekdays_dependency.minutes[i] = 1;
+
+      /* When the trend is neutral */
+      } else if (room->rough_plan.weekdays_trends.time_slots[i] >= -0.1 &&
+          room->rough_plan.weekdays_trends.time_slots[i] <= 0.1 ) {
+
+        if (i > 0) {
+          room->rough_plan.weekdays_temperatures.time_slots[i] =
+            room->rough_plan.weekdays_temperatures.time_slots[i-1];
+        } else {
+          room->rough_plan.weekdays_temperatures.time_slots[i] = room->comfort_temperature;
+        }
+
+      /* When the trend is falling */
+      } else if (room->rough_plan.weekdays_trends.time_slots[i] < -0.1) {
+        room->rough_plan.weekdays_temperatures.time_slots[i] = room->comfort_temperature;
+        room->rough_plan.weekdays_dependency.minutes[i] = -30 * room->rough_plan.weekdays.time_slots[i];
+      }
+    }
+  }
 }
 
 void calc_trend(int days_count, Room *room) {
@@ -89,11 +161,15 @@ void calc_trend(int days_count, Room *room) {
         result_weekends += room->rough_plan.weekends.time_slots[i] -
           room->rough_plan.weekends.time_slots[i - 1];
         room->rough_plan.weekends_trends.time_slots[i] = result_weekends;
+      } else {
+        room->rough_plan.weekdays_trends.time_slots[i] = 0;
+        room->rough_plan.weekends_trends.time_slots[i] = 0;
       }
     }
   } else {
     for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
       for (j = 0; j < MAX_TIME_SLOT; j++) {
+
       }
     }
   }
@@ -208,16 +284,16 @@ void reset(double e[], double f[]) {
   }
 }
 
-double calc_weight(int index) {
-  if (index < 28) {
+double calc_weight(int data_age_in_days) {
+  if (data_age_in_days < 28) {
     return 1.0;
-  } else if (index < 42) {
+  } else if (data_age_in_days < 42) {
     return 0.8;
-  } else if (index < 56) {
+  } else if (data_age_in_days < 56) {
     return 0.6;
-  } else if (index < 70) {
+  } else if (data_age_in_days < 70) {
     return 0.4;
-  } else if (index < 120) {
+  } else if (data_age_in_days < 120) {
     return 0.15;
   }
   return 0;
