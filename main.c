@@ -15,6 +15,7 @@
 #define MAX_CHARS_PER_LINE 100
 #define MAX_DAYS 100
 #define MAX_TIME_SLOT 48
+#define TIME_BLOCKS_PER_DAY 48
 #define MAX_DAYS_FINE_SORTING 14
 
 typedef struct day {
@@ -44,6 +45,27 @@ typedef struct fine_weighted_week {
   SensorDependency dependencies[MAX_DAYS_FINE_SORTING];
 } FineWeightedWeek;
 
+typedef struct sensor_data {
+  double values[MAX_DAYS][MAX_TIME_SLOT];
+  int day_count;
+} SensorData;
+
+typedef struct time_block {
+  double weighted_average;
+  double trend;
+  double room_temperature;
+  double sensor_reaction_time;
+} TimeBlock;
+
+typedef struct day_block {
+  TimeBlock time_blocks[MAX_TIME_SLOT];
+} DayBlock;
+
+typedef struct heating_schedule {
+  DayBlock *items[MAX_DAYS_FINE_SORTING];
+  int count;
+} HeatingSchedule;
+
 typedef struct room {
   char name[MAX_CHARS_PER_LINE];
   RoughWeightedWeek rough_plan;
@@ -62,11 +84,55 @@ void generate_plan_chart(char file_name[], int days_count, Room room);
 void calc_temperatures(int days_count, Room *room);
 void calc_temperature_rough_helper(int i, Room *room, Day *trends, Day *confidence_values, SensorDependency *dependencies, Day *temperatures);
 
+SensorData *read_sensor_data(const char file_name[]);
+HeatingSchedule *make_schedule(SensorData *data, Room *room);
+HeatingSchedule *make_simple_schedule(double comfort_temperature);
+HeatingSchedule *make_rough_schedule(SensorData *data, Room *room);
+HeatingSchedule *make_fine_schedule(SensorData *data, Room *room);
+
+HeatingSchedule *heating_schedule_init() {
+  HeatingSchedule *hs = malloc(sizeof(HeatingSchedule));
+  if (hs == NULL) {
+    printf("Error in heating_schedule_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+  return hs;
+}
+
+DayBlock *day_block_init() {
+  DayBlock *db = malloc(sizeof(DayBlock));
+  if (db == NULL) {
+    printf("Error in day_block_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+  return db;
+}
+
+HeatingSchedule *make_simple_schedule(double comfort_temperature) {
+  int j;
+  HeatingSchedule *schedule = heating_schedule_init();
+  DayBlock *day = day_block_init();
+
+  for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
+    day->time_blocks[j].weighted_average = 1;
+    day->time_blocks[j].trend = 0;
+    day->time_blocks[j].temperature = comfort_temperature;
+    day->time_blocks[j].reaction_time = 0;
+  }
+
+  schedule->items[0] = day;
+  schedule->count = 1;
+
+  return schedule;
+}
+
 int main(int argc, char *argv[]) {
   Day days[MAX_DAYS];
   int days_count;
-  int i;
+  int i, j;
   Room room;
+  SensorData *sensor_data;
+
   room.comfort_temperature = 23;
   room.away_temperature = 17;
   strcpy(room.name, "test");
@@ -75,6 +141,14 @@ int main(int argc, char *argv[]) {
     printf("Please provide a file name.\n");
     exit(EXIT_FAILURE);
   }
+
+  sensor_data = read_sensor_data(argv[1]);
+  for (i = 0; i < sensor_data->day_count; i++) {
+    printf("%3d: %8.1f %8.1f \n", i, sensor_data->values[i][0], sensor_data->values[i][1]);
+  }
+
+
+
 
   read_input(argv[1], days, &days_count);
   calc(days, days_count, &room);
@@ -95,6 +169,7 @@ int main(int argc, char *argv[]) {
         );
   }
   */
+  /*
 
   for (i = 0; i < MAX_TIME_SLOT; i++) {
     printf("%4.2f degrees %10.2f (min)  %10.2f (confidence) %10.2f (trend) \n",
@@ -103,6 +178,7 @@ int main(int argc, char *argv[]) {
         room.fine_plan.days[2].time_slots[i],
         room.fine_plan.trends[2].time_slots[i]);
   }
+  */
 
   /*
   for (i = 0; i < MAX_TIME_SLOT; i++) {
@@ -366,6 +442,52 @@ void read_input(char file_name[], Day days[], int *days_count) {
   }
 
   *days_count = i;
+}
+
+SensorData *sensor_data_init() {
+  SensorData *sensor_data = malloc(sizeof(SensorData));
+  if (sensor_data == NULL) {
+    printf("Error in sensor_data_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+  return sensor_data;
+}
+
+SensorData *read_sensor_data(const char file_name[]) {
+  double value;
+  int i = 0, j = 0, scan_res;
+  SensorData *sensor_data = NULL;
+  FILE *handle = fopen(file_name, "r");
+
+  if (handle != NULL) {
+    sensor_data = sensor_data_init();
+
+    while ((scan_res = fscanf(handle, " %lf", &value)) != EOF) {
+      if (scan_res == 0) {
+        printf("Error in read_sensor_data(): invalid value at line %d value %d.\n", i+1, j+1);
+        exit(EXIT_FAILURE);
+      }
+      if (i >= MAX_DAYS) {
+        printf("Error in read_sensor_data(): can only handle %d days of data.\n", MAX_DAYS);
+        exit(EXIT_FAILURE);
+      }
+
+      sensor_data->values[i][j] = value;
+      j++;
+      if (j % MAX_TIME_SLOT == 0) {
+        i++;
+        j = 0;
+      }
+    }
+
+    fclose(handle);
+    sensor_data->day_count = i;
+  } else {
+    printf("Error in read_file(): File '%s' cannot be opened.\n", file_name);
+    exit(EXIT_FAILURE);
+  }
+
+  return sensor_data;
 }
 
 /* @param[in] day_index Must start with a Monday */
