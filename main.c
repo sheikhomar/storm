@@ -79,11 +79,11 @@ int main(int argc, char *argv[]) {
   calc_temperatures(&room);
 
   for (i = 0; i < MAX_TIME_SLOT; i++) {
-    printf("%4.2f %10.2f  %10.2f %10.2f \n",
-        room.rough_plan.weekdays_temperatures.time_slots[i],
-        room.rough_plan.weekdays_dependency.minutes[i],
-        room.rough_plan.weekdays.time_slots[i],
-        room.rough_plan.weekdays_trends.time_slots[i]);
+    printf("%4.2f degrees %10.2f (min)  %10.2f (confidence) %10.2f (trend) \n",
+        room.rough_plan.weekends_temperatures.time_slots[i],
+        room.rough_plan.weekends_dependency.minutes[i],
+        room.rough_plan.weekends.time_slots[i],
+        room.rough_plan.weekends_trends.time_slots[i]);
   }
 
   return EXIT_SUCCESS;
@@ -130,6 +130,18 @@ void calc_temperatures(Room *room) {
     } else {
       room->rough_plan.weekdays_temperatures.time_slots[i] = room->away_temperature;
       room->rough_plan.weekdays_dependency.minutes[i] = 5;
+    }
+    if (room->rough_plan.weekends.time_slots[i] >= 0.9) {
+      room->rough_plan.weekends_temperatures.time_slots[i] = room->comfort_temperature;
+      room->rough_plan.weekends_dependency.minutes[i] = 0;
+
+    } else if (room->rough_plan.weekends.time_slots[i] > 0.1) {
+      calc_temperature_helper('R', i, room, &room->rough_plan.weekends_trends,
+          &room->rough_plan.weekends, &room->rough_plan.weekends_dependency,
+          &room->rough_plan.weekends_temperatures);
+    } else {
+      room->rough_plan.weekends_temperatures.time_slots[i] = room->away_temperature;
+      room->rough_plan.weekends_dependency.minutes[i] = 5;
     }
   }
 }
