@@ -1,3 +1,9 @@
+/**
+ * @file ppm.c
+ * @author Kurt Normark
+ * @see http://people.cs.aau.dk/~normark/impr-c/more-functions-slide-ppm-lib.html
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>

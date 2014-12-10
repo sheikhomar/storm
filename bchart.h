@@ -1,3 +1,9 @@
+/**
+ * @file bchart.h
+ * @author A400a
+ * @brief Block chart represents
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppm.h"
@@ -15,19 +21,19 @@ typedef struct block_chart {
 } BlockChart;
 
 
-/** @brief The constructor of a BlockChart.
+/** @brief Initializes a new chart.
  * @param[in] max_blocks
  * @param[in] max_lines
  */
 BlockChart *bchart_init(int max_blocks, int max_lines);
 
-/** @brief Moves the drawing 'cursor' to the next line.
- */
-void bchart_next_line(BlockChart *chart);
-
 /** @brief Draws blocks based on the provided data.
  */
 void bchart_draw_blocks(BlockChart *chart, const double data[], int data_size);
+
+/** @brief Moves the drawing 'cursor' to the next line.
+ */
+void bchart_next_line(BlockChart *chart);
 
 /** @brief Saves chart to file.
  */

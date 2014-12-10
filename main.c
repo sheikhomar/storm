@@ -1,3 +1,11 @@
+/**
+ * @file main.c
+ * @author A400a
+ * @brief Brief description
+ *
+ * Some detailed description here...
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
