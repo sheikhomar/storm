@@ -33,6 +33,10 @@ void bchart_draw_blocks(BlockChart *chart, const double data[], int data_size) {
     draw_block(chart->image, BLOCK_WIDTH*i+1,  BLOCK_HEIGHT*chart->line_index, data[i]);
 }
 
+void bchart_draw_block(BlockChart *chart, int i, double block) {
+  draw_block(chart->image, BLOCK_WIDTH*i+1,  BLOCK_HEIGHT*chart->line_index, block);
+}
+
 void bchart_save(BlockChart *chart, char output_file[]) {
   write_image(chart->image, output_file);
 }

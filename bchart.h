@@ -27,6 +27,8 @@ typedef struct block_chart {
  */
 BlockChart *bchart_init(int max_blocks, int max_lines);
 
+void bchart_draw_block(BlockChart *chart, int i, double block);
+
 /** @brief Draws blocks based on the provided data.
  */
 void bchart_draw_blocks(BlockChart *chart, const double data[], int data_size);
