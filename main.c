@@ -117,22 +117,30 @@ void run_interactive() {
 }
 
 void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_FILE_NAME], int *file_count) {
-  DIR *dp;
-  struct dirent *ep;
+  DIR *directory;
+  struct dirent *entry;
 
-  dp = opendir(directory_name);
-  if (dp != NULL) {
-    while ((ep = readdir(dp))) {
-      if (strcmp(ep->d_name, "..") != 0 && strcmp(ep->d_name, ".") != 0) {
-        strcpy(file_names[*file_count], ep->d_name);
-        (*file_count)++;
-      }
-    }
-    closedir (dp);
-  } else {
-    printf("Couldn't open the directory");
+  /* Following code is adapted from:
+   * http://stackoverflow.com/questions/12489/how-do-you-get-a-directory-listing-in-c
+   * Another possiblity is to use: https://github.com/cxong/tinydir
+   * */
+
+  /* Open directory */
+  directory = opendir(directory_name);
+  if (directory == NULL) {
+    printf("Error in get_file_names(): Could not open directory '%s'.\n", directory_name);
     exit(EXIT_FAILURE);
   }
+
+  /* Iterate over directory entries */
+  while ((entry = readdir(directory))) {
+    if (strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0) {
+      strcpy(file_names[*file_count], entry->d_name);
+      (*file_count)++;
+    }
+  }
+
+  closedir(directory);
 }
 
 void select_room(char selected_room[]) {
