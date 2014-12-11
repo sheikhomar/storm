@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author A400a
- * @brief Brief description
+ * @brief Brief descriptionf
  *
  * Some detailed description here...
  */
@@ -53,7 +53,7 @@ typedef struct sensor_data {
 typedef struct time_block {
   double weighted_average;
   double trend;
-  double room_temperature;
+  double temperature;
   double sensor_reaction_time;
 } TimeBlock;
 
@@ -194,13 +194,46 @@ HeatingSchedule *make_simple_schedule(double comfort_temperature) {
     day->time_blocks[j].weighted_average = 1;
     day->time_blocks[j].trend = 0;
     day->time_blocks[j].temperature = comfort_temperature;
-    day->time_blocks[j].reaction_time = 0;
+    day->time_blocks[j].sensor_reaction_time = 0;
   }
 
   schedule->items[0] = day;
   schedule->count = 1;
 
   return schedule;
+}
+
+void calc_weighted_average_for_rough_schedule(SensorData *data, HeatingSchedule *schedule)  {
+  double weekday_result, weekend_result, weekdays_count, weekends_count;
+  int i, j;
+
+  DayBlock *weekdays = day_block_init();
+  DayBlock *weekends = day_block_init();
+
+  for (i = 0; i < MAX_TIME_SLOT; i++) {
+    weekday_result = 0;
+    weekend_result = 0;
+    weekdays_count = 0;
+    weekends_count = 0;
+
+    for (j = 0; j < data->day_count; j++) {
+      if (is_weekday(j)) {
+        weekday_result += data->values[j][i];
+        weekdays_count++;
+      } else {
+        weekend_result += data->values[j][i];
+        weekends_count++;
+      }
+    }
+    weekday_result /= weekdays_count;
+    weekend_result /= weekends_count;
+    weekdays->time_blocks[i].weighted_average = weekday_result;
+    weekends->time_blocks[i].weighted_average = weekend_result;
+  }
+
+  schedule->count = 2;
+  schedule->items[0] = weekdays;
+  schedule->items[0] = weekends;
 }
 
 HeatingSchedule *make_rough_schedule(SensorData *data, Room *room) {
