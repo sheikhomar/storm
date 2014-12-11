@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "bchart.h"
 
@@ -17,6 +19,7 @@
 #define MAX_TIME_SLOT 48
 #define TIME_BLOCKS_PER_DAY 48
 #define MAX_DAYS_FINE_SORTING 14
+#define MAX_CHAR_PER_FILE_NAME 100
 
 typedef struct sensor_data {
   double values[MAX_DAYS][MAX_TIME_SLOT];
@@ -53,6 +56,8 @@ void reset(double e[], double f[]);
 void calc_temperature_rough_helper(int i, Room *room, DayBlock *day_block);
 void calc_temperature_fine_helper(int i, int j, Room *room, HeatingSchedule *schedule);
 void generate_plan(char file_name[], HeatingSchedule *schedule);
+void run_interactive();
+void select_room(char selected_room[]);
 
 SensorData *read_sensor_data(const char file_name[]);
 HeatingSchedule *make_schedule(SensorData *data, Room *room);
@@ -60,36 +65,95 @@ HeatingSchedule *make_simple_schedule(double comfort_temperature);
 HeatingSchedule *make_rough_schedule(SensorData *data, Room *room);
 HeatingSchedule *make_fine_schedule(SensorData *data, Room *room);
 
+
 int main(int argc, char *argv[]) {
-  int i;
-  Room room;
-  SensorData *sensor_data;
-  HeatingSchedule *schedule;
-
-  room.comfort_temperature = 23;
-  room.away_temperature = 17;
-  strcpy(room.name, "test");
-
   if (argc < 2) {
-    printf("Please provide a file name.\n");
+    run_interactive();
+  } else {
+    int i;
+    Room room;
+    SensorData *sensor_data;
+    HeatingSchedule *schedule;
+    room.comfort_temperature = 23;
+    room.away_temperature = 17;
+
+    sensor_data = read_sensor_data(argv[1]);
+    schedule = make_schedule(sensor_data, &room);
+
+    for (i = 0; i < MAX_TIME_SLOT; i++) {
+      printf("%8.2f  %8.2f       %8.2f  %8.2f \n",
+          schedule->items[0]->time_blocks[i].temperature,
+          schedule->items[0]->time_blocks[i].sensor_reaction_time,
+          schedule->items[0]->time_blocks[i].weighted_average,
+          schedule->items[0]->time_blocks[i].trend
+          );
+    }
+
+    generate_chart("tmp/plan.pnm", schedule);
+    generate_plan("tmp/plan.txt", schedule);
+  }
+  return EXIT_SUCCESS;
+}
+
+void run_interactive() {
+  int menu_selection;
+
+  printf("Menu:\n");
+  printf("1) Show heating schedule for a room \n");
+  printf("2) Create a new room \n");
+
+  do {
+    printf("Select a menu: ");
+    scanf("%d", &menu_selection);
+  } while (menu_selection < 1 || menu_selection > 2);
+
+  if (menu_selection == 1) {
+    char room_name[MAX_CHAR_PER_FILE_NAME];
+    select_room(room_name);
+
+    printf("Please ");
+  }
+}
+
+void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_FILE_NAME], int *file_count) {
+  DIR *dp;
+  struct dirent *ep;
+
+  dp = opendir(directory_name);
+  if (dp != NULL) {
+    while ((ep = readdir(dp))) {
+      if (strcmp(ep->d_name, "..") != 0 && strcmp(ep->d_name, ".") != 0) {
+        strcpy(file_names[*file_count], ep->d_name);
+        (*file_count)++;
+      }
+    }
+    closedir (dp);
+  } else {
+    printf("Couldn't open the directory");
     exit(EXIT_FAILURE);
   }
+}
 
-  sensor_data = read_sensor_data(argv[1]);
-  schedule = make_schedule(sensor_data, &room);
+void select_room(char selected_room[]) {
+  char file_names[30][MAX_CHAR_PER_FILE_NAME];
+  int i = 1;
+  int file_count;
+  int user_selection;
 
-  for (i = 0; i < MAX_TIME_SLOT; i++) {
-    printf("%8.2f  %8.2f       %8.2f  %8.2f \n",
-        schedule->items[0]->time_blocks[i].temperature,
-        schedule->items[0]->time_blocks[i].sensor_reaction_time,
-        schedule->items[0]->time_blocks[i].weighted_average,
-        schedule->items[0]->time_blocks[i].trend
-        );
+  get_file_names("./sensor_data", file_names, &file_count);
+
+  for (i = 0; i < file_count; i++) {
+    printf(" %2d %s \n", i+1, file_names[i]);
   }
 
-  generate_chart("tmp/plan.pnm", schedule);
-  generate_plan("tmp/plan.txt", schedule);
-  return EXIT_SUCCESS;
+  do {
+    printf("Please select a room from the list: ");
+    scanf("%d", &user_selection);
+  } while (user_selection > file_count || user_selection < 1);
+
+  printf("User selected %s \n", file_names[user_selection-1]);
+
+  strcpy(selected_room, file_names[user_selection-1]);
 }
 
 HeatingSchedule *heating_schedule_init() {
@@ -501,4 +565,3 @@ double calc_weight(int data_age_in_days) {
   }
   return 0;
 }
-
