@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+#include "config.h"
 #include "bchart.h"
 
 #define MAX_CHARS_PER_LINE 100
