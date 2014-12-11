@@ -15,6 +15,11 @@ void draw_block(ppm *image, int start_x, int start_y, double value) {
 
 BlockChart *bchart_init(int max_blocks, int max_lines) {
   BlockChart *chart = malloc(sizeof(BlockChart));
+  if (chart == NULL) {
+    printf("Error in bchart_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+
   chart->image = make_image(BLOCK_WIDTH * max_blocks + 2, max_lines * BLOCK_HEIGHT, make_pixel(255U, 255U, 255U));
   chart->max_blocks = max_blocks;
   chart->max_lines = max_lines;
