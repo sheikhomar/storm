@@ -90,42 +90,6 @@ HeatingSchedule *make_simple_schedule(double comfort_temperature);
 HeatingSchedule *make_rough_schedule(SensorData *data, Room *room);
 HeatingSchedule *make_fine_schedule(SensorData *data, Room *room);
 
-HeatingSchedule *heating_schedule_init() {
-  HeatingSchedule *hs = malloc(sizeof(HeatingSchedule));
-  if (hs == NULL) {
-    printf("Error in heating_schedule_init(): Could not allocate memory!");
-    exit(EXIT_FAILURE);
-  }
-  return hs;
-}
-
-DayBlock *day_block_init() {
-  DayBlock *db = malloc(sizeof(DayBlock));
-  if (db == NULL) {
-    printf("Error in day_block_init(): Could not allocate memory!");
-    exit(EXIT_FAILURE);
-  }
-  return db;
-}
-
-HeatingSchedule *make_simple_schedule(double comfort_temperature) {
-  int j;
-  HeatingSchedule *schedule = heating_schedule_init();
-  DayBlock *day = day_block_init();
-
-  for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
-    day->time_blocks[j].weighted_average = 1;
-    day->time_blocks[j].trend = 0;
-    day->time_blocks[j].temperature = comfort_temperature;
-    day->time_blocks[j].reaction_time = 0;
-  }
-
-  schedule->items[0] = day;
-  schedule->count = 1;
-
-  return schedule;
-}
-
 int main(int argc, char *argv[]) {
   Day days[MAX_DAYS];
   int days_count;
@@ -191,6 +155,74 @@ int main(int argc, char *argv[]) {
   */
 
   return EXIT_SUCCESS;
+}
+
+HeatingSchedule *heating_schedule_init() {
+  HeatingSchedule *hs = malloc(sizeof(HeatingSchedule));
+  if (hs == NULL) {
+    printf("Error in heating_schedule_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+  return hs;
+}
+
+DayBlock *day_block_init() {
+  DayBlock *db = malloc(sizeof(DayBlock));
+  if (db == NULL) {
+    printf("Error in day_block_init(): Could not allocate memory!");
+    exit(EXIT_FAILURE);
+  }
+  return db;
+}
+
+HeatingSchedule *make_schedule(SensorData *data, Room *room) {
+  if (data->day_count <= 7)
+    return make_simple_schedule(room->comfort_temperature);
+
+  if (data->day_count <= 28)
+    return make_rough_schedule(data, room);
+
+  return make_fine_schedule(data, room);
+}
+
+HeatingSchedule *make_simple_schedule(double comfort_temperature) {
+  int j;
+  HeatingSchedule *schedule = heating_schedule_init();
+  DayBlock *day = day_block_init();
+
+  for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
+    day->time_blocks[j].weighted_average = 1;
+    day->time_blocks[j].trend = 0;
+    day->time_blocks[j].temperature = comfort_temperature;
+    day->time_blocks[j].reaction_time = 0;
+  }
+
+  schedule->items[0] = day;
+  schedule->count = 1;
+
+  return schedule;
+}
+
+HeatingSchedule *make_rough_schedule(SensorData *data, Room *room) {
+  HeatingSchedule *schedule = heating_schedule_init();
+
+  // calculate weighted average for each time block
+  // calculate trends in the weighted avarages
+  // calculate temperatures
+  // calculate sensor reaction times
+
+  return schedule;
+}
+
+HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
+  HeatingSchedule *schedule = heating_schedule_init();
+
+  // calculate weighted average for each time block
+  // calculate trends in the weighted avarages
+  // calculate temperatures
+  // calculate sensor reaction times
+
+  return schedule;
 }
 
 void calc_temperature_fine_helper(int i, int j, Room *room) {
