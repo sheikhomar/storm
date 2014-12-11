@@ -1,5 +1,8 @@
-build: main.c pixel.o ppm.o bchart.o config.o
-	gcc -ansi -Wall -pedantic main.c pixel.o ppm.o bchart.o config.o -lm
+build: main.c pixel.o ppm.o bchart.o config.o schedule.o
+	gcc -ansi -Wall -pedantic main.c pixel.o ppm.o bchart.o config.o schedule.o -lm
+
+schedule.o: schedule.c schedule.h
+	gcc -ansi -Wall -pedantic -c schedule.c schedule.h
 
 config.o: config.c config.h
 	gcc -ansi -Wall -pedantic -c config.c config.h
