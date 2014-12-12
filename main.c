@@ -87,6 +87,8 @@ void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_F
     exit(EXIT_FAILURE);
   }
 
+  *file_count = 0;
+
   /* Iterate over directory entries */
   while ((entry = readdir(directory))) {
     if (strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0) {
