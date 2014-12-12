@@ -159,7 +159,7 @@ ppm *read_image(char *file_name){
 
 void release_image(ppm *image){
   int i;
-  for(i = 0; i <= image->width; i++)
+  for(i = 0; i < image->width; i++)
     free(image->pixels[i]);
   free(image->pixels);
   image->pixels = NULL;
