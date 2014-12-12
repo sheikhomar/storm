@@ -4,6 +4,11 @@
  * @brief Brief descriptionf
  *
  * Some detailed description here...
+ * KNOWN ISSUES:
+ *  - If no files are found in sensor_data folder, menu 1
+ *    will loop infinitely.
+ *  - After creating a new room the menu will accept invalid
+ *    string input and select a random sub menu.
  */
 
 #include <stdio.h>
