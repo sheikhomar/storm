@@ -302,23 +302,12 @@ void generate_chart(char file_name[], HeatingSchedule *schedule) {
   int i, j;
   BlockChart *chart = NULL;
 
-  if (schedule->count == 1) {
-    chart = bchart_init(MAX_TIME_SLOT, 2);
-    for (i = 0; i < MAX_TIME_SLOT; i++) {
-      bchart_draw_block(chart, i, schedule->items[0]->time_blocks[i].weighted_average);
+  chart = bchart_init(MAX_TIME_SLOT, schedule->count);
+  for (i = 0; i < schedule->count; i++) {
+    for (j = 0; j < MAX_TIME_SLOT; j++) {
+      bchart_draw_block(chart, j, schedule->items[i]->time_blocks[j].weighted_average);
     }
     bchart_next_line(chart);
-    for (i = 0; i < MAX_TIME_SLOT; i++) {
-      bchart_draw_block(chart, i, schedule->items[0]->time_blocks[i].weighted_average);
-    }
-  } else {
-    chart = bchart_init(MAX_TIME_SLOT, schedule->count);
-    for (i = 0; i < schedule->count; i++) {
-      for (j = 0; j < MAX_TIME_SLOT; j++) {
-        bchart_draw_block(chart, j, schedule->items[i]->time_blocks[j].weighted_average);
-      }
-      bchart_next_line(chart);
-    }
   }
 
   if (chart != NULL) {
