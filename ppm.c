@@ -2,6 +2,7 @@
  * @file ppm.c
  * @author Kurt Normark
  * @see http://people.cs.aau.dk/~normark/impr-c/more-functions-slide-ppm-lib.html
+ * Minor changes by A400a.
  */
 
 #include <stdlib.h>
