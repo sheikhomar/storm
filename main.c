@@ -247,6 +247,10 @@ void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_F
   /* Iterate over directory entries */
   while ((entry = readdir(directory))) {
     if (strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0) {
+      if (*file_count >= MAX_CONFIG_ITEM_COUNT) {
+        printf("Error in get_file_names(): Can only handle %d files.\n", MAX_CONFIG_ITEM_COUNT);
+        exit(EXIT_FAILURE);
+      }
       strcpy(file_names[*file_count], entry->d_name);
       (*file_count)++;
     }
@@ -256,7 +260,7 @@ void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_F
 }
 
 void select_room(char selected_room[]) {
-  char file_names[30][MAX_CHAR_PER_FILE_NAME];
+  char file_names[MAX_CONFIG_ITEM_COUNT][MAX_CHAR_PER_FILE_NAME];
   int i = 1;
   int file_count;
   int user_selection;
