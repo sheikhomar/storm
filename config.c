@@ -45,6 +45,7 @@ Config *config_load(const char file_name[]) {
   }
 
   config = config_init();
+  config->count = 0;
 
   while (fgets(line, MAX_LINE_LENGTH, handle) != NULL) {
     config_item = config_new_item(config);
