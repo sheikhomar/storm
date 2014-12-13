@@ -229,18 +229,25 @@ HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
 void calc_weighted_average_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) {
   int i, j;
   double results[MAX_DAYS_IN_SCHEDULE];
-  double counters[MAX_DAYS_IN_SCHEDULE];
+  double sum_of_weights[MAX_DAYS_IN_SCHEDULE];
   double weight;
-
+  
   for (i = 0; i < MAX_TIME_SLOT; i++) {
-    reset(results, counters);
+    /* reset() overwrites arrays with 0's */
+    reset(results, sum_of_weights);
+    
+    /* An inner for-loop summarizes the data for each day in the i'th TimeBlock */
+    /* For each TimeBlock (outer) the days' (inner) sensordata are stored */
     for (j = 0; j < data->day_count; j++) {
+      /* calc_weight() returns a number between 0 and 1 based on data age */
       weight = calc_weight(j);
-      results[j % MAX_DAYS_IN_SCHEDULE] += (data->values[j][i] * weight);
-      counters[j % MAX_DAYS_IN_SCHEDULE] += weight;
+      results[j % MAX_DAYS_IN_SCHEDULE] += ((data->values[j][i]) * weight);
+      sum_of_weights[j % MAX_DAYS_IN_SCHEDULE] += weight;
     }
+    
+    /* Once the data is summarized the average is computed and stored */
     for (j = 0; j < MAX_DAYS_IN_SCHEDULE; j++) {
-      results[j] /= counters[j];
+      results[j] /= sum_of_weights[j];
       schedule->items[j]->time_blocks[i].weighted_average = results[j];
     }
   }
