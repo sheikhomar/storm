@@ -2,7 +2,7 @@
 #define MAX_DAYS 100
 #define MAX_TIME_SLOT 48
 #define TIME_BLOCKS_PER_DAY 48
-#define MAX_DAYS_FINE_SORTING 14
+#define MAX_DAYS_IN_SCHEDULE 14
 #define MAX_CHAR_PER_FILE_NAME 100
 
 typedef struct sensor_data {
@@ -10,11 +10,18 @@ typedef struct sensor_data {
   int day_count;
 } SensorData;
 
+/* Represents a fraction of a DayBlock */
 typedef struct time_block {
+  /* indicates how often a room is used in this TimeBlock */
   double weighted_average;
+  /* indicates whether the weighted average is declining or increasing around this TimeBlock */
   double trend;
+  /* indicates the current temperature in this TimeBlock */
   double temperature;
-  /* Negative sensor reaction time indicate how long the user must be absent for the thermostat to turn off */
+  /*
+   * Negative value indicates how long the user must be absent before away temperature is engaged
+   * Positive value indicates how long the user must be present before comfort temperature is engaged
+   */   
   double sensor_reaction_time;
 } TimeBlock;
 
@@ -22,8 +29,11 @@ typedef struct day_block {
   TimeBlock time_blocks[MAX_TIME_SLOT];
 } DayBlock;
 
+/* Represents a schedule for a specific room */
 typedef struct heating_schedule {
-  DayBlock *items[MAX_DAYS_FINE_SORTING];
+  /* Up to 14 days are stored in the schedule */
+  DayBlock *items[MAX_DAYS_IN_SCHEDULE];
+  /* Indicates the actual amount of days in the schedule */
   int count;
 } HeatingSchedule;
 

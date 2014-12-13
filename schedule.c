@@ -215,7 +215,7 @@ HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
   int i;
   HeatingSchedule *schedule = heating_schedule_init();
 
-  for (i = 0; i < MAX_DAYS_FINE_SORTING; i++)
+  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++)
     schedule->items[i] = day_block_init();
   schedule->count = i;
 
@@ -228,18 +228,18 @@ HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
 
 void calc_weighted_average_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) {
   int i, j;
-  double results[MAX_DAYS_FINE_SORTING];
-  double counters[MAX_DAYS_FINE_SORTING];
+  double results[MAX_DAYS_IN_SCHEDULE];
+  double counters[MAX_DAYS_IN_SCHEDULE];
   double weight;
 
   for (i = 0; i < MAX_TIME_SLOT; i++) {
     reset(results, counters);
     for (j = 0; j < data->day_count; j++) {
       weight = calc_weight(j);
-      results[j % MAX_DAYS_FINE_SORTING] += (data->values[j][i] * weight);
-      counters[j % MAX_DAYS_FINE_SORTING] += weight;
+      results[j % MAX_DAYS_IN_SCHEDULE] += (data->values[j][i] * weight);
+      counters[j % MAX_DAYS_IN_SCHEDULE] += weight;
     }
-    for (j = 0; j < MAX_DAYS_FINE_SORTING; j++) {
+    for (j = 0; j < MAX_DAYS_IN_SCHEDULE; j++) {
       results[j] /= counters[j];
       schedule->items[j]->time_blocks[i].weighted_average = results[j];
     }
@@ -250,12 +250,12 @@ void calc_trends_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) 
   int i,j;
   DayBlock *day, *previous_day, *next_day;
 
-  for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
     day = schedule->items[i];
     for (j = 0; j < MAX_TIME_SLOT; j++) {
 
       /* First block of first day or last block of the last day */
-      if ((j == 0 && i == 0) || (j == (MAX_TIME_SLOT-1) && i == (MAX_DAYS_FINE_SORTING-1))) {
+      if ((j == 0 && i == 0) || (j == (MAX_TIME_SLOT-1) && i == (MAX_DAYS_IN_SCHEDULE-1))) {
         day->time_blocks[j].trend = 0;
       } else {
 
@@ -288,7 +288,7 @@ void calc_trends_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) 
 
 void calc_temperatures_and_sensor_reaction_time_for_fine_schedule(SensorData *data, HeatingSchedule *schedule, Room *room) {
   int i, j;
-  for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
     DayBlock *day = schedule->items[i];
 
     for (j = 0; j < MAX_TIME_SLOT; j++) {
@@ -345,7 +345,7 @@ int is_weekday(int day_index) {
 
 void reset(double e[], double f[]) {
   int i;
-  for (i = 0; i < MAX_DAYS_FINE_SORTING; i++) {
+  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
     e[i] = 0;
     f[i] = 0;
   }
