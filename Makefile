@@ -15,9 +15,3 @@ ppm.o: ppm.h ppm.c pixel.o
 
 pixel.o: pixel.h pixel.c
 	gcc -ansi -Wall -pedantic -c pixel.c pixel.h -lm
-
-doc:
-	doxygen Doxyfile
-
-clean:
-	rm -f *.o *.gch *.exe *.out

@@ -1,12 +1,11 @@
 #define MAX_CHARS_PER_LINE 100
 #define MAX_DAYS 100
-#define MAX_TIME_SLOT 48
 #define TIME_BLOCKS_PER_DAY 48
 #define MAX_DAYS_IN_SCHEDULE 14
 #define MAX_CHAR_PER_FILE_NAME 100
 
 typedef struct sensor_data {
-  double values[MAX_DAYS][MAX_TIME_SLOT];
+  double values[MAX_DAYS][TIME_BLOCKS_PER_DAY];
   int day_count;
 } SensorData;
 
@@ -26,7 +25,7 @@ typedef struct time_block {
 } TimeBlock;
 
 typedef struct day_block {
-  TimeBlock time_blocks[MAX_TIME_SLOT];
+  TimeBlock time_blocks[TIME_BLOCKS_PER_DAY];
 } DayBlock;
 
 /* Represents a schedule for a specific room */

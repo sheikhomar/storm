@@ -46,15 +46,6 @@ int main(int argc, char *argv[]) {
     sensor_data = read_sensor_data(argv[1]);
     schedule = make_schedule(sensor_data, &room);
 
-    for (i = 0; i < MAX_TIME_SLOT; i++) {
-      printf("%8.2f  %8.2f       %8.2f  %8.2f \n",
-          schedule->items[0]->time_blocks[i].temperature,
-          schedule->items[0]->time_blocks[i].sensor_reaction_time,
-          schedule->items[0]->time_blocks[i].weighted_average,
-          schedule->items[0]->time_blocks[i].trend
-          );
-    }
-
     generate_chart("tmp/plan.pnm", schedule);
     generate_plan("tmp/plan.txt", schedule);
   }
@@ -150,6 +141,7 @@ void run_interactive() {
       } else {
         printf("Do you wish to change settings? (Y/N)");
         scanf("%c", &change_settings);
+        clear_standard_input_line();
 
         if (change_settings == 'Y' || change_settings == 'y') {
           get_validated_user_temperatures(item);
@@ -196,7 +188,7 @@ void write_schedule_to_file(const char file_name[], HeatingSchedule *schedule) {
   }
 
   for (i = 0; i < schedule->count; i++) {
-    for (j = 0; j < MAX_TIME_SLOT; j++) {
+    for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
       fprintf(output, "%8.2f %8.2f\n",
           schedule->items[i]->time_blocks[j].temperature,
           schedule->items[i]->time_blocks[j].sensor_reaction_time);
@@ -296,7 +288,7 @@ void generate_plan(char file_name[], HeatingSchedule *schedule) {
 
   if (output != NULL) {
     for (i = 0; i < schedule->count; i++) {
-      for (j = 0; j < MAX_TIME_SLOT; j++) {
+      for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
         double w = schedule->items[i]->time_blocks[j].weighted_average;
         fprintf(output, "%.2f ", w);
       }
@@ -311,9 +303,9 @@ void generate_chart(char file_name[], HeatingSchedule *schedule) {
   int i, j;
   BlockChart *chart = NULL;
 
-  chart = bchart_init(MAX_TIME_SLOT, schedule->count);
+  chart = bchart_init(TIME_BLOCKS_PER_DAY, schedule->count);
   for (i = 0; i < schedule->count; i++) {
-    for (j = 0; j < MAX_TIME_SLOT; j++) {
+    for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
       bchart_draw_block(chart, j, schedule->items[i]->time_blocks[j].weighted_average);
     }
     bchart_next_line(chart);

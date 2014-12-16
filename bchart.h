@@ -14,9 +14,13 @@
 /** @brief Represents a block chart.
  */
 typedef struct block_chart {
+  /* A reference to a ppm image */
   ppm *image;
-  int max_blocks;
+  /* If more blocks are attempted drawn than max_blocks, the overflowing blocks will be ignored */
+  int max_blocks;  
+  /* Like max_blocks, if more lines are attempted, they will be ignored */
   int max_lines;
+  /* The current line being drawn */
   int line_index;
 } BlockChart;
 
