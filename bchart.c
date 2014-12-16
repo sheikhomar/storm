@@ -6,10 +6,10 @@ void draw_block(ppm *image, int start_x, int start_y, double value) {
   unsigned int r = 255 - (255 * value);
   unsigned int g = 255 - (149 * value);
   unsigned int b = 255U;
-  
+
   /* Pixel is generated using RGB color */
   pixel px = make_pixel(r, g, b);
-  
+
   /* The entire block is colored with Pixel */
   for(i = 1; i < BLOCK_WIDTH; i++)
     for (j = 1; j < BLOCK_HEIGHT; j++)
@@ -39,14 +39,14 @@ void bchart_next_line(BlockChart *chart) {
   chart->line_index++;
 }
 
-void bchart_draw_blocks(BlockChart *chart, const double data[], int data_size) {
+void bchart_draw_blocks(BlockChart *chart, const double values[], int value_count) {
   int i;
-  for (i = 0; i < data_size; i++)
-    draw_block(chart->image, BLOCK_WIDTH*i+1,  BLOCK_HEIGHT*chart->line_index, data[i]);
+  for (i = 0; i < value_count; i++)
+    draw_block(chart->image, BLOCK_WIDTH*i+1,  BLOCK_HEIGHT*chart->line_index, values[i]);
 }
 
-void bchart_draw_block(BlockChart *chart, int i, double block) {
-  draw_block(chart->image, BLOCK_WIDTH*i+1,  BLOCK_HEIGHT*chart->line_index, block);
+void bchart_draw_block(BlockChart *chart, int column_index, double value) {
+  draw_block(chart->image, BLOCK_WIDTH*column_index+1,  BLOCK_HEIGHT*chart->line_index, value);
 }
 
 void bchart_save(BlockChart *chart, char output_file[]) {

@@ -1,16 +1,3 @@
-/**
- * @file main.c
- * @author A400a
- * @brief Brief descriptionf
- *
- * Some detailed description here...
- * KNOWN ISSUES:
- *  - If no files are found in sensor_data folder, menu 1
- *    will loop infinitely.
- *  - After creating a new room the menu will accept invalid
- *    string input and select a random sub menu.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,22 +8,72 @@
 #include "bchart.h"
 #include "schedule.h"
 
+/* Name of the configuration file. */
+#define CONFIG_FILE_NAME "rooms.cfg"
+#define MAX_FILE_NAME_LENGTH 100
 #define MIN_ROOM_TEMPERATURE 15.0
 #define MAX_ROOM_TEMPERATURE 30.0
 
+/*
+ * Runs program in interactive mode.
+ */
 void run_interactive();
+
+/*
+ * Prompts user to select a room from a list of files created
+ * in sensor_data folder. The selection is stored in the
+ * output parameter selected_room.
+ */
 void select_room(char selected_room[]);
-void generate_plan(char file_name[], HeatingSchedule *schedule);
-void generate_chart(char file_name[], HeatingSchedule *schedule);
+
+/*
+ * Writes heating schedule to file.
+ */
 void write_schedule_to_file(const char file_name[], HeatingSchedule *schedule);
+
+/*
+ * Generates a block chart that represents weighted averages.
+ */
+void write_chart_to_file(char file_name[], HeatingSchedule *schedule);
+
+/*
+ * Creates a new room based user input.
+ */
 void make_new_room(Config *config);
+
+/*
+ * Concatenates several string variables into a single string.
+ */
 void concatenate(char dest[], const char src1[], const char src2[], const char src3[]);
+
+/** Clears the rest of the line in standard input.
+ * Source: http://people.cs.aau.dk/~normark/impr-c/source-programs/errors-test/Kurt
+ *       /Files/impr-c/sources/notes-and-c/c/note-examples/errors/input-1.txt
+ **/
+void clear_standard_input_line(void);
+
+/*
+ * Prompts user for comfort and away temperatures, and
+ * stores validated values into the provided output parameter.
+ */
+void get_validated_user_temperatures(ConfigItem *item);
+
+/*
+ * Prompts user to select a menu item.
+ */
+int get_menu_selection();
+
+/*
+ * Saves directory entries into the output parameter file_names.
+ * The output parameter file_count contains amout of entries
+ * in file_names parameter.
+ */
+void get_file_names(const char *directory_name, char file_names[][MAX_FILE_NAME_LENGTH], int *file_count);
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     run_interactive();
   } else {
-    int i;
     Room room;
     SensorData *sensor_data;
     HeatingSchedule *schedule;
@@ -46,16 +83,13 @@ int main(int argc, char *argv[]) {
     sensor_data = read_sensor_data(argv[1]);
     schedule = make_schedule(sensor_data, &room);
 
-    generate_chart("tmp/plan.pnm", schedule);
-    generate_plan("tmp/plan.txt", schedule);
+    write_chart_to_file("tmp/plan.pnm", schedule);
+    write_schedule_to_file("tmp/plan.txt", schedule);
+    printf("You can find block chart of weighted average in tmp/plan.pnm\n");
   }
   return EXIT_SUCCESS;
 }
 
-/** Clears the rest of the line in standard input.
- * From: http://people.cs.aau.dk/~normark/impr-c/source-programs/errors-test/Kurt
- *       /Files/impr-c/sources/notes-and-c/c/note-examples/errors/input-1.txt
- **/
 void clear_standard_input_line(void){
   int ch;
   while ((ch = getchar()) != '\n' && ch != EOF);
@@ -106,6 +140,7 @@ int get_menu_selection() {
 
   return menu_selection;
 }
+
 void run_interactive() {
   int menu_selection;
   Config *config;
@@ -115,11 +150,11 @@ void run_interactive() {
   char input_file_name[MAX_LINE_LENGTH];
   char chart_file_name[MAX_LINE_LENGTH];
   char schedule_file_name[MAX_LINE_LENGTH];
-  char room_name[MAX_CHAR_PER_FILE_NAME];
+  char room_name[MAX_FILE_NAME_LENGTH];
   SensorData *sensor_data;
   HeatingSchedule *schedule;
 
-  config = config_load("rooms.cfg");
+  config = config_load(CONFIG_FILE_NAME);
 
   while (menu_selection != 3) {
     menu_selection = get_menu_selection();
@@ -137,7 +172,7 @@ void run_interactive() {
         item = config_new_item(config);
         strcpy(item->name, room_name);
         get_validated_user_temperatures(item);
-        config_save(config, "rooms.cfg");
+        config_save(config, CONFIG_FILE_NAME);
       } else {
         printf("Do you wish to change settings? (Y/N)");
         scanf("%c", &change_settings);
@@ -145,7 +180,7 @@ void run_interactive() {
 
         if (change_settings == 'Y' || change_settings == 'y') {
           get_validated_user_temperatures(item);
-          config_save(config, "rooms.cfg");
+          config_save(config, CONFIG_FILE_NAME);
         }
       }
 
@@ -160,7 +195,7 @@ void run_interactive() {
 
       concatenate(chart_file_name, "tmp/", room_name, ".pnm");
 
-      generate_chart(chart_file_name, schedule);
+      write_chart_to_file(chart_file_name, schedule);
       printf("You can find block chart of weighted average in %s\n", chart_file_name);
 
       concatenate(schedule_file_name, "tmp/", room_name, "-schedule.txt");
@@ -200,8 +235,8 @@ void write_schedule_to_file(const char file_name[], HeatingSchedule *schedule) {
 }
 
 void make_new_room(Config *config) {
-  char room_name[MAX_CHAR_PER_FILE_NAME];
-  char file_name[MAX_CHAR_PER_FILE_NAME];
+  char room_name[MAX_FILE_NAME_LENGTH];
+  char file_name[MAX_FILE_NAME_LENGTH];
   int scan_res;
   FILE *output;
   ConfigItem *item;
@@ -220,16 +255,15 @@ void make_new_room(Config *config) {
   item = config_new_item(config);
   strcpy(item->name, room_name);
   get_validated_user_temperatures(item);
-  config_save(config, "rooms.cfg");
+  config_save(config, CONFIG_FILE_NAME);
 }
 
-void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_FILE_NAME], int *file_count) {
+void get_file_names(const char *directory_name, char file_names[][MAX_FILE_NAME_LENGTH], int *file_count) {
   DIR *directory;
   struct dirent *entry;
 
   /* Following code is adapted from:
    * http://stackoverflow.com/questions/12489/how-do-you-get-a-directory-listing-in-c
-   * Another possiblity is to use: https://github.com/cxong/tinydir
    * */
 
   /* Open directory */
@@ -257,7 +291,7 @@ void get_file_names(const char *directory_name, char file_names[][MAX_CHAR_PER_F
 }
 
 void select_room(char selected_room[]) {
-  char file_names[MAX_CONFIG_ITEM_COUNT][MAX_CHAR_PER_FILE_NAME];
+  char file_names[MAX_CONFIG_ITEM_COUNT][MAX_FILE_NAME_LENGTH];
   int i = 1;
   int file_count;
   int user_selection;
@@ -281,25 +315,7 @@ void select_room(char selected_room[]) {
 
 
 
-void generate_plan(char file_name[], HeatingSchedule *schedule) {
-  FILE *output;
-  int i,j;
-  output = fopen(file_name, "w");
-
-  if (output != NULL) {
-    for (i = 0; i < schedule->count; i++) {
-      for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
-        double w = schedule->items[i]->time_blocks[j].weighted_average;
-        fprintf(output, "%.2f ", w);
-      }
-      fprintf(output, "\n");
-    }
-
-    fclose(output);
-  }
-}
-
-void generate_chart(char file_name[], HeatingSchedule *schedule) {
+void write_chart_to_file(char file_name[], HeatingSchedule *schedule) {
   int i, j;
   BlockChart *chart = NULL;
 

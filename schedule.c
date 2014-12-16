@@ -215,7 +215,7 @@ HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
   int i;
   HeatingSchedule *schedule = heating_schedule_init();
 
-  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++)
+  for (i = 0; i < MAX_DAYS_FOR_SCHEDULES; i++)
     schedule->items[i] = day_block_init();
   schedule->count = i;
 
@@ -228,43 +228,42 @@ HeatingSchedule *make_fine_schedule(SensorData *data, Room *room) {
 
 void calc_weighted_average_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) {
   int i, j;
-  double results[MAX_DAYS_IN_SCHEDULE];
-  double sum_of_weights[MAX_DAYS_IN_SCHEDULE];
+  double results[MAX_DAYS_FOR_SCHEDULES];
+  double sum_of_weights[MAX_DAYS_FOR_SCHEDULES];
   double weight;
-  
+
   for (i = 0; i < TIME_BLOCKS_PER_DAY; i++) {
     /* reset() overwrites arrays with 0's */
     reset(results, sum_of_weights);
-    
+
     /* An inner for-loop summarizes the data for each day in the i'th TimeBlock */
     /* For each TimeBlock (outer) the days' (inner) sensordata are stored */
     for (j = 0; j < data->day_count; j++) {
       /* calc_weight() returns a number between 0 and 1 based on data age */
       weight = calc_weight(j);
-      results[j % MAX_DAYS_IN_SCHEDULE] += ((data->values[j][i]) * weight);
-      sum_of_weights[j % MAX_DAYS_IN_SCHEDULE] += weight;
+      results[j % MAX_DAYS_FOR_SCHEDULES] += ((data->values[j][i]) * weight);
+      sum_of_weights[j % MAX_DAYS_FOR_SCHEDULES] += weight;
     }
-    
+
     /* Once the data is summarized the average is computed and stored */
-    for (j = 0; j < MAX_DAYS_IN_SCHEDULE; j++) {
+    for (j = 0; j < MAX_DAYS_FOR_SCHEDULES; j++) {
       results[j] /= sum_of_weights[j];
       schedule->items[j]->time_blocks[i].weighted_average = results[j];
     }
   }
 }
 
-/* trends are computed using simple numerical differentiation */
 void calc_trends_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) {
   int i,j;
   /* Pointers declared for convenience and ease of reading */
   DayBlock *day, *previous_day, *next_day;
 
-  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
+  for (i = 0; i < MAX_DAYS_FOR_SCHEDULES; i++) {
     day = schedule->items[i];
     for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
 
       /* First block of first day or last block of the last day. Can't access values beyond array */
-      if ((j == 0 && i == 0) || (j == (TIME_BLOCKS_PER_DAY-1) && i == (MAX_DAYS_IN_SCHEDULE-1))) {
+      if ((j == 0 && i == 0) || (j == (TIME_BLOCKS_PER_DAY-1) && i == (MAX_DAYS_FOR_SCHEDULES-1))) {
         day->time_blocks[j].trend = 0;
       } else {
 
@@ -297,7 +296,7 @@ void calc_trends_for_fine_schedule(SensorData *data, HeatingSchedule *schedule) 
 
 void calc_temperatures_and_sensor_reaction_time_for_fine_schedule(SensorData *data, HeatingSchedule *schedule, Room *room) {
   int i, j;
-  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
+  for (i = 0; i < MAX_DAYS_FOR_SCHEDULES; i++) {
     DayBlock *day = schedule->items[i];
 
     for (j = 0; j < TIME_BLOCKS_PER_DAY; j++) {
@@ -305,11 +304,11 @@ void calc_temperatures_and_sensor_reaction_time_for_fine_schedule(SensorData *da
       if (day->time_blocks[j].weighted_average >= 0.9) {
         day->time_blocks[j].temperature = room->comfort_temperature;
         day->time_blocks[j].sensor_reaction_time = 0;
-        
+
       /* Uncertain whether user is home - call helper function to use trend */
       } else if (day->time_blocks[j].weighted_average > 0.1) {
         calc_temperature_fine_helper(i, j, room, schedule);
-        
+
       /* Very certain user is not home - assign away temperature */
       } else {
         day->time_blocks[j].temperature = room->away_temperature;
@@ -339,13 +338,13 @@ void calc_temperature_fine_helper(int i, int j, Room *room, HeatingSchedule *sch
       /* Repeat previous temperature and reaction time */
       day->time_blocks[j].temperature = day->time_blocks[j-1].temperature;
       day->time_blocks[j].sensor_reaction_time = day->time_blocks[j-1].sensor_reaction_time;
-      
+
     /* If first day and first timeblock (no trend exists) */
     } else if (i == 0 && j == 0) {
       /* Hardcode assign comfort temperature and negative reaction time */
       day->time_blocks[j].temperature = room->comfort_temperature;
       day->time_blocks[j].sensor_reaction_time = (-30 * day->time_blocks[j].weighted_average);
-      
+
     /* First timeblock of a day and NOT the first day */
     } else {
       DayBlock *previous_day = schedule->items[i-1];
@@ -363,14 +362,13 @@ void calc_temperature_fine_helper(int i, int j, Room *room, HeatingSchedule *sch
 }
 
 
-/* @param[in] day_index Must start with a Monday */
 int is_weekday(int day_index) {
   return ((day_index+1) % 7 < 6 && (day_index+1) % 7 > 0);
 }
 
 void reset(double e[], double f[]) {
   int i;
-  for (i = 0; i < MAX_DAYS_IN_SCHEDULE; i++) {
+  for (i = 0; i < MAX_DAYS_FOR_SCHEDULES; i++) {
     e[i] = 0;
     f[i] = 0;
   }
